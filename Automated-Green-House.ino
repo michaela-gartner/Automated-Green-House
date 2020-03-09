@@ -13,7 +13,10 @@
 #define HOVERLIGHT 1
 #define HOVERWATER 2
 #define HOVERPRESET 3
+//water sensor
 
+#define PUMP_PIN 7 
+#define WATER_SENSOR_PIN 0
 //light sensor variables 
 unsigned int digitalValue = 0;
 int LightOut = 2; //pin out # 
@@ -41,16 +44,38 @@ int sunlightCounter = 0;
  int lightLevel;
  int tempMaxLevel;
  int tempMinLevel;
- 
+
+ //water sensor values
+  float user_moisture_percent = 80;
+  float AirValue = 550;
+  float WaterValue = 330;
+
  
 void setup() {
   // put your setup code here, to run once:
+  uiSetup();
+  Serial.begin(9600);
+  //light sensor set up
+  pinMode(WindowOutput, OUTPUT); //LED circuit output
+  digitalWrite(WindowOutput, LOW);
+  dayStart = millis(); //starts the timer when the program starts running
+  pinMode(LightOut, INPUT); // Digital Input from light sensor
+
+  //water sensor setup
+   pinMode(PUMP_PIN, OUTPUT); //pump pin is output
+ 
+  Serial.println("Hello! welcome to our automated greenhouse!");
+  delay(2000);
+
+
+}
+void uiSetup(){
   pinMode(BACK, INPUT);
   pinMode(ENTER, INPUT);
   pinMode(INCREASE, INPUT);
   pinMode(DECREASE, INPUT);
   pinMode(CYCLE, INPUT);
-  Serial.begin(9600);
+  
   hover = HOVERTEMP;
   currentMenu = MAINMENU;
   showMenuDisplay = true;
@@ -59,24 +84,35 @@ void setup() {
   lightLevel=8;
   tempMaxLevel=30;
   tempMinLevel=25;
-
-  //light sensor set up
-  pinMode(WindowOutput, OUTPUT); //LED circuit output
-  digitalWrite(WindowOutput, LOW);
-  dayStart = millis(); //starts the timer when the program starts running
-  pinMode(LightOut, INPUT); // Digital Input from light sensor
- 
-  Serial.println("Hello! welcome to our automated greenhouse!");
-  delay(2000);
-
-
 }
 
  
 void loop() {
-  
-  //Serial.println("hello world");
-  backVal = digitalRead(BACK);
+  lightSensorControl();
+  waterSensorLoop();
+  //checkScreenButtons();
+
+}
+
+void waterSensorLoop(){
+    int waterSensorVal = analogRead(WATER_SENSOR_PIN);
+  int moisture_threshold = (int)(AirValue - (user_moisture_percent/((float)100))*(AirValue - WaterValue));
+  //Serial.println(waterSensorVal);
+  //value for sensor in air  
+  if(waterSensorVal>moisture_threshold){
+    digitalWrite(PUMP_PIN, LOW); //turn pump on
+    delay(300); // turn on for a hot sec
+  }
+  digitalWrite(PUMP_PIN, HIGH); //turn pump off
+  delay(5000);
+  Serial.print(waterSensorVal);
+  Serial.print(" ");
+  Serial.print(moisture_threshold);
+  Serial.println();
+}
+
+void checkScreenButtons(){
+   backVal = digitalRead(BACK);
   enterVal = digitalRead(ENTER);
   increaseVal = digitalRead(INCREASE);
   decreaseVal = digitalRead(DECREASE);
@@ -84,7 +120,6 @@ void loop() {
 
   displayMenu();
   displayHover();
-  lightSensorControl();
   if(backVal == HIGH){
      //Serial.println(" GO BACK");
      backFun();
@@ -110,7 +145,6 @@ void loop() {
      delay(500);
   }
 }
-
 void backFun(){
    showMenuDisplay = true;
     if(currentMenu!= MAINMENU){

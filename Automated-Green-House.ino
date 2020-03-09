@@ -6,7 +6,7 @@
 
 //screen variables 
 #define ONE_WIRE_BUS 2
-#define TempIn 8
+#define TempIn 5
 #define limitswitchbutton 6
 #define MaxTemp 26
 #define MinTemp 21
@@ -128,7 +128,7 @@ void tempSetup(){
 void loop() {
   lightSensorControl();
   waterSensorLoop();
- // temperatureControlLoop();
+  temperatureControlLoop();
   //checkScreenButtons();
 
 }
@@ -317,7 +317,7 @@ void lightSensorControl(){
   }
   
   //closes the window if the plant has recieved 5 hours of sunlight
-  else if(sunlightCounter > 4){ //checks if the counter reaches 10 within 10s
+  else if(sunlightCounter > 2){ //checks if the counter reaches 10 within 10s
     digitalWrite(WindowOutput, HIGH);
     WindowClose = true;
 

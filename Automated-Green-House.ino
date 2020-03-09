@@ -5,7 +5,7 @@
 #include <Servo.h>
 
 //screen variables 
-#define ONE_WIRE_BUS 2
+#define ONE_WIRE_BUS 8
 #define TempIn 5
 #define limitswitchbutton 6
 #define MaxTemp 26
@@ -95,6 +95,16 @@ void setup() {
  
   Serial.println("Hello! welcome to our automated greenhouse!");
  // delay(2000);
+
+//temp setup
+   sensors.begin();
+  pinMode(TempIn,INPUT);
+  pinMode(limitswitchbutton,INPUT);
+  servo1.attach(10);
+  servo1.write(90);
+  delay(1000);
+  Serial.begin(9600);
+  isDoorOpen = false;
 
 
 }

@@ -1,3 +1,4 @@
+//screen variables 
 #define BACK 7 //black
 #define ENTER 12 //green
 #define INCREASE 11 //blue
@@ -12,6 +13,15 @@
 #define HOVERLIGHT 1
 #define HOVERWATER 2
 #define HOVERPRESET 3
+
+//light sensor variables 
+unsigned int digitalValue = 0;
+int LightOut = 2; //pin out # 
+
+int WindowOutput = 3;
+unsigned long dayStart = 0;
+bool WindowClose = false;
+int sunlightCounter = 0;
 
 
 //internal values to keep track of what is being displayed 
@@ -49,6 +59,12 @@ void setup() {
   lightLevel=8;
   tempMaxLevel=30;
   tempMinLevel=25;
+
+  //light sensor set up
+  pinMode(WindowOutput, OUTPUT); //LED circuit output
+  digitalWrite(WindowOutput, LOW);
+  dayStart = millis(); //starts the timer when the program starts running
+  pinMode(LightOut, INPUT); // Digital Input from light sensor
  
   Serial.println("Hello! welcome to our automated greenhouse!");
   delay(2000);
@@ -58,6 +74,7 @@ void setup() {
 
  
 void loop() {
+  
   //Serial.println("hello world");
   backVal = digitalRead(BACK);
   enterVal = digitalRead(ENTER);
@@ -67,6 +84,7 @@ void loop() {
 
   displayMenu();
   displayHover();
+  lightSensorControl();
   if(backVal == HIGH){
      //Serial.println(" GO BACK");
      backFun();
@@ -213,4 +231,41 @@ void displayPresetMenu(){
   Serial.println("*************");
   Serial.println("10%");
   Serial.println("*************");
+}
+
+void lightSensorControl(){
+    int dayCurrent = millis() - dayStart; //tracks how much time is left in the day
+  //Serial.println(dayCurrent);
+  
+  if(dayCurrent > 10000){
+    dayStart = millis(); //resets the start of the day
+    sunlightCounter = 0;
+    Serial.println("New Day");
+  }
+  
+  //closes the window if the plant has recieved 5 hours of sunlight
+  if(sunlightCounter == 10 && dayCurrent < 10000){ //checks if the counter reaches 10 within 10s
+    digitalWrite(WindowOutput, HIGH);
+    WindowClose = true;
+
+    digitalValue = 1;
+   // Serial.println("Window Closed");
+    delay(10000 - dayCurrent);
+    dayStart = millis(); //resets the start of the timer to the the time after the delay
+    sunlightCounter = 0;
+  }
+  else{
+    digitalValue = digitalRead(LightOut);
+    
+    if(digitalValue == 0){
+      sunlightCounter = sunlightCounter + 1;
+    }
+    
+    //Serial.println(digitalValue);
+    
+    digitalWrite(WindowOutput, LOW);
+    WindowClose = false;
+    
+    delay(500); // reads a value from the light sensor every .5s
+  } 
 }

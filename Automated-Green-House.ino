@@ -13,6 +13,8 @@
 #define HOVERWATER 2
 #define HOVERPRESET 3
 
+
+//internal values to keep track of what is being displayed 
  boolean showMenuDisplay;
  boolean showHoverDisplay;
  int  backVal;
@@ -20,8 +22,11 @@
  int  increaseVal;
  int  decreaseVal;
  int  cycleVal;
+ 
  int currentMenu; //the menu to be displayed on the screen
  int hover; //which element is highlighted
+
+ //thresholds set by user 
  int waterLevel;
  int lightLevel;
  int tempMaxLevel;
@@ -63,17 +68,23 @@ void loop() {
   displayMenu();
   displayHover();
   if(backVal == HIGH){
-     Serial.println(" GO BACK");
+     //Serial.println(" GO BACK");
+     backFun();
+     delay(500);
   }
     if(enterVal == HIGH){
      enterFun();
      delay(500);
   }
     if(increaseVal == HIGH){
-     Serial.println("INCREASE");
+     //Serial.println("INCREASE");
+     increaseFun();
+     delay(500);
   }
     if(decreaseVal == HIGH){
-     Serial.println("DECREASE");
+   //  Serial.println("DECREASE");
+     decreaseFun();
+     delay(500);
     }
     if(cycleVal == HIGH){
      //Serial.println("cycle");
@@ -83,7 +94,11 @@ void loop() {
 }
 
 void backFun(){
-  
+   showMenuDisplay = true;
+    if(currentMenu!= MAINMENU){
+      currentMenu = MAINMENU;
+    }
+  displayMenu();
 }
 void enterFun(){
     showMenuDisplay = true;
@@ -94,10 +109,30 @@ void enterFun(){
   
 }
 void increaseFun(){
-  
+  showMenuDisplay=true;
+  if(currentMenu == TEMPMENU){
+    
+  }else if(currentMenu == WATERMENU && waterLevel<100){
+    waterLevel++;
+  }else if(currentMenu == PRESETMENU){
+    
+  }else if (currentMenu == LIGHTMENU && lightLevel<16){
+    lightLevel++;
+  }
+  displayMenu();
 }
 void decreaseFun(){
-  
+  showMenuDisplay=true;
+   if(currentMenu == TEMPMENU){
+        
+  }else if(currentMenu == WATERMENU && waterLevel>0){
+    waterLevel--;
+  }else if(currentMenu == PRESETMENU){
+    
+  }else if (currentMenu == LIGHTMENU && lightLevel>0){
+    lightLevel--;
+  }
+  displayMenu();
 }
 
 void cycleFun(){
@@ -117,13 +152,17 @@ void displayMenu(){
   if(showMenuDisplay){
     Serial.print("the current menu is: ");
     if(currentMenu ==TEMPMENU){
-      Serial.println("temperature submenu ");
+      //Serial.println("temperature submenu ");
+        displayTempMenu();
       }else if(currentMenu ==LIGHTMENU){
-        Serial.println("light submenu");
+        //Serial.println("light submenu");
+        displayLightMenu();
       }else if(currentMenu ==WATERMENU){
-        Serial.println("water submenu");
+        //Serial.println("water submenu");
+        displayWaterMenu();
       }else if(currentMenu ==PRESETMENU){
-        Serial.println("preset submenu");
+       // Serial.println("preset submenu");
+       displayPresetMenu();
       }else if(currentMenu ==MAINMENU){
         Serial.println("main submenu");
       } 
@@ -149,25 +188,29 @@ void displayHover(){
 void displayWaterMenu(){
   Serial.println("You have selected the water submenu, below is the current value");
   Serial.println("*************");
-  Serial.print("10%");
-  Serial.println("*************");
-  
+  Serial.println(waterLevel);
+  Serial.println("%");
+  Serial.println("*************");  
 }
+
 void displayLightMenu(){
-  Serial.println("You have selected the water submenu, below is the current value");
+  Serial.println("You have selected the light submenu, below is the current value");
   Serial.println("*************");
-  Serial.print("10%");
+  Serial.println(lightLevel);
+  Serial.println("h");
   Serial.println("*************");
 }
+
 void displayTempMenu(){
-  Serial.println("You have selected the water submenu, below is the current value");
+  Serial.println("You have selected the temp submenu, below is the current value");
   Serial.println("*************");
-  Serial.print("10%");
+  Serial.println("10%");
   Serial.println("*************");
 }
+
 void displayPresetMenu(){
-  Serial.println("You have selected the water submenu, below is the current value");
+  Serial.println("You have selected the preset submenu, below is the current value");
   Serial.println("*************");
-  Serial.print("10%");
+  Serial.println("10%");
   Serial.println("*************");
 }

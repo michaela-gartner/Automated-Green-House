@@ -1,9 +1,33 @@
+
+
+#include <OneWire.h>
+#include <DallasTemperature.h>
+#include <Servo.h>
+
 //screen variables 
+#define ONE_WIRE_BUS 2
+#define TempIn 8
+#define limitswitchbutton 6
+#define MaxTemp 26
+#define MinTemp 21
+
+OneWire oneWire(ONE_WIRE_BUS);  
+DallasTemperature sensors(&oneWire);
+Servo servo1;
+
 #define BACK 7 //black
 #define ENTER 12 //green
 #define INCREASE 11 //blue
 #define DECREASE 9 //yellow
 #define CYCLE 10 //red
+//water
+#define PUMP_PIN 7 
+#define WATER_SENSOR_PIN 0
+
+//light sensor 
+#define LIGHT_OUT 2
+#define WINDOW_OUTPUT 3
+
 #define MAINMENU 4
 #define TEMPMENU 0
 #define LIGHTMENU 1
@@ -15,8 +39,12 @@
 #define HOVERPRESET 3
 //water sensor
 
-#define PUMP_PIN 7 
-#define WATER_SENSOR_PIN 0
+
+
+//temp sensor vals
+
+boolean isDoorOpen;
+
 //light sensor variables 
 unsigned int digitalValue = 0;
 int LightOut = 2; //pin out # 
@@ -25,7 +53,7 @@ int WindowOutput = 3;
 unsigned long dayStart = 0;
 bool WindowClose = false;
 int sunlightCounter = 0;
-
+int dayLength = 1000;
 
 //internal values to keep track of what is being displayed 
  boolean showMenuDisplay;
@@ -53,7 +81,7 @@ int sunlightCounter = 0;
  
 void setup() {
   // put your setup code here, to run once:
-  uiSetup();
+//  uiSetup();
   Serial.begin(9600);
   //light sensor set up
   pinMode(WindowOutput, OUTPUT); //LED circuit output
@@ -62,15 +90,16 @@ void setup() {
   pinMode(LightOut, INPUT); // Digital Input from light sensor
 
   //water sensor setup
+//  delay(2000);
    pinMode(PUMP_PIN, OUTPUT); //pump pin is output
  
   Serial.println("Hello! welcome to our automated greenhouse!");
-  delay(2000);
+ // delay(2000);
 
 
 }
 void uiSetup(){
-  pinMode(BACK, INPUT);
+    pinMode(BACK, INPUT);
   pinMode(ENTER, INPUT);
   pinMode(INCREASE, INPUT);
   pinMode(DECREASE, INPUT);
@@ -86,10 +115,20 @@ void uiSetup(){
   tempMinLevel=25;
 }
 
+void tempSetup(){
+   sensors.begin();
+  pinMode(TempIn,INPUT);
+  pinMode(limitswitchbutton,INPUT);
+  servo1.attach(10);
+  servo1.write(90);
+  delay(1000);
+  isDoorOpen = false;
+}
  
 void loop() {
   lightSensorControl();
   waterSensorLoop();
+ // temperatureControlLoop();
   //checkScreenButtons();
 
 }
@@ -104,7 +143,7 @@ void waterSensorLoop(){
     delay(300); // turn on for a hot sec
   }
   digitalWrite(PUMP_PIN, HIGH); //turn pump off
-  delay(5000);
+  delay(1000);
   Serial.print(waterSensorVal);
   Serial.print(" ");
   Serial.print(moisture_threshold);
@@ -268,7 +307,7 @@ void displayPresetMenu(){
 }
 
 void lightSensorControl(){
-    int dayCurrent = millis() - dayStart; //tracks how much time is left in the day
+     int dayCurrent = millis() - dayStart; //tracks how much time is left in the day
   //Serial.println(dayCurrent);
   
   if(dayCurrent > 10000){
@@ -278,15 +317,15 @@ void lightSensorControl(){
   }
   
   //closes the window if the plant has recieved 5 hours of sunlight
-  if(sunlightCounter == 10 && dayCurrent < 10000){ //checks if the counter reaches 10 within 10s
+  else if(sunlightCounter > 4){ //checks if the counter reaches 10 within 10s
     digitalWrite(WindowOutput, HIGH);
     WindowClose = true;
 
-    digitalValue = 1;
-   // Serial.println("Window Closed");
-    delay(10000 - dayCurrent);
-    dayStart = millis(); //resets the start of the timer to the the time after the delay
-    sunlightCounter = 0;
+   // digitalValue = 1;
+    Serial.println("Window Closed");
+    //delay(10000 - dayCurrent);
+    //dayStart = millis(); //resets the start of the timer to the the time after the delay
+  //  sunlightCounter = 0;
   }
   else{
     digitalValue = digitalRead(LightOut);
@@ -295,11 +334,50 @@ void lightSensorControl(){
       sunlightCounter = sunlightCounter + 1;
     }
     
-    //Serial.println(digitalValue);
+    Serial.println(digitalValue);
     
     digitalWrite(WindowOutput, LOW);
-    WindowClose = false;
+  //  WindowClose = false;
     
     delay(500); // reads a value from the light sensor every .5s
   } 
+}
+
+void temperatureControlLoop(){
+    // put your main code here, to run repeatedly:
+  sensors.requestTemperatures();            // Input from temperature sensor. Not currently used in code. 
+  int limitswitch = digitalRead(limitswitchbutton);
+  int TempInput = digitalRead(TempIn);
+  Serial.print("Temperature: "); 
+  Serial.print(sensors.getTempCByIndex(0)); //Value
+  Serial.print((char)127); //Space character  
+  Serial.println("C  ");
+    
+    if(limitswitch == HIGH && TempInput == LOW){ // Door is Closed, Servo is stationary, Temperature is good.
+     // Serial.println("limit switch highm temp input low");
+      servo1.write(90); // Servo is not moving
+    }
+    else if(limitswitch == HIGH && TempInput == HIGH){ //Temperature is high but the door is currently closed.
+      dooropen();                                      // Must Open Door.
+      isDoorOpen =true;
+    // Serial.println("limit switch highm temp input high");
+      servo1.write(90); //Servo is not moving
+    }
+    else if(limitswitch == LOW && TempInput == HIGH){ //Door is open, Temperature is still too high.
+      servo1.write(90); //Servo is not moving     
+    //Serial.println("limit switch low temp input high");    
+    } 
+    else if (limitswitch == LOW && TempInput == LOW && isDoorOpen){ // Door is Open, But temperature is no longer too high.
+      servo1.write(180); //Servo closing door
+      isDoorOpen=false;
+     
+    } 
+    else{
+     // Serial.println("int else");
+    }
+}
+
+void dooropen() { // Opens door 
+    servo1.write(0); //Servo opening door.
+    delay(500); // Time spent with servo opening door. 
 }
